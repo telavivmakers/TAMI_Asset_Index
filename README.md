@@ -20,7 +20,7 @@ It occured to me that it would be nice to have a perfect organisation and inform
 
 - We'll need to label all the spaces (for example all the shelving will need some sticker labels with codes written on them identifying the slot location.)
 
-- I'll use Redis for the DB, simply because I like it.
+- I'll use Redis for the DB, simply because I like it. Should be fast, but will also save to disk.
 
 - NodeJS server and ReactJS webclient connected with Primus for Websockets.  This may seem like overkill but will allow realtime change viewing by any connected client.
 
