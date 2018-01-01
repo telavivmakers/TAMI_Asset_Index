@@ -23,10 +23,11 @@ api['init_primus'] = ({ effect, store }) ->
             type: 'primus:data'
             payload: { data }
 
-    # setInterval =>
-    #     primus.write
-    #         type: 'request_orient'
-    # , 300
+    setInterval =>
+        primus.write
+            type: 'request_orient'
+            payload: 43
+    , 3000
 
 
 exports.default = api

@@ -7,7 +7,7 @@ thunk = require('redux-thunk').default
 middleware = thunk
 
 
-lookup = require('./reducers/lookup.coffee').default
+lookup = require('./reducers/tami_index.coffee').default
 
 reducers = { lookup }
 
