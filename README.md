@@ -3,6 +3,8 @@
 
 # TAMI Space Catalogue
 
+_by Wylie Kulik_
+[kulicuu]()
 
 
 ### Preface: A User Story

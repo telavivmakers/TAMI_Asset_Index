@@ -5,6 +5,7 @@ api = {}
 
 api['primus_hotwire'] = ({ effect, state }) ->
     { type, payload } = effect.payload
+    # c 'writing'
     primus.write { type, payload }
 
 

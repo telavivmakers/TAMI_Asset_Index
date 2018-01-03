@@ -1,5 +1,5 @@
 exports.default =
-    lookup:
+    tami_index:
         # jobs: Imm.Map({})
 
         effects : Imm.Map

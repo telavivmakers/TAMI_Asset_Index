@@ -12,7 +12,7 @@ keys_arq = _.keys arq
 effects_f = ({ store }) ->
     ({ state_js }) ->
         state = state_js
-        for key_id, effect of state.lookup.effects
+        for key_id, effect of state.tami_index.effects
             if _.includes(keys_arq, effect.type)
                 arq[effect.type] { effect , store }
 

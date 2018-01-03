@@ -2,8 +2,12 @@
 
 home = rc require('../scenes/home.coffee').default
 
+dashboard = rc require('../scenes/dashboard.coffee').default
+dashboard_001 = rc require('../scenes/dashboard_001.coffee').default
+
 render = ->
-    home()
+    # home()
+    dashboard_001()
 
 comp = rr
     render: render

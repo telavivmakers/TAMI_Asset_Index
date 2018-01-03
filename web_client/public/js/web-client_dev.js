@@ -44897,7 +44897,7 @@ Provider = rc(__webpack_require__(22).Provider);
 
 store = __webpack_require__(88);
 
-nexus = rc(__webpack_require__(98).default);
+nexus = rc(__webpack_require__(99).default);
 
 root_component = rr({
   render: function() {
@@ -44938,7 +44938,7 @@ window.onload = function() {
 /* 88 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var applyMiddleware, combineReducers, compose, createStore, effect_trigger_f, effects, imm_initial_state, initial_state, lookup, middleware, reducers, set, state_js, store, thunk;
+var applyMiddleware, combineReducers, compose, createStore, effect_trigger_f, effects, imm_initial_state, initial_state, middleware, reducers, set, state_js, store, tami_index, thunk;
 
 ({applyMiddleware, compose, createStore} = __webpack_require__(26));
 
@@ -44948,17 +44948,17 @@ thunk = __webpack_require__(94).default;
 
 middleware = thunk;
 
-lookup = __webpack_require__(100).default;
+tami_index = __webpack_require__(95).default;
 
-reducers = {lookup};
+reducers = {tami_index};
 
-initial_state = __webpack_require__(95).default;
+initial_state = __webpack_require__(96).default;
 
 imm_initial_state = Imm.fromJS(initial_state);
 
 store = createStore(combineReducers(reducers), imm_initial_state, compose(applyMiddleware(middleware)));
 
-effects = __webpack_require__(96).default({store});
+effects = __webpack_require__(97).default({store});
 
 effect_trigger_f = function({store}) {
   return function() {
@@ -45190,8 +45190,62 @@ exports['default'] = thunk;
 /* 95 */
 /***/ (function(module, exports) {
 
+var api, incoming_effects_api, keys_api, keys_incoming_effects_api, tami_index;
+
+api = {};
+
+incoming_effects_api = {};
+
+// concord_channel['dctn_initial_blob'] = ({ state, action, data }) ->
+//     state.setIn ['dctn_blob'], data.payload.blob
+keys_incoming_effects_api = _.keys(incoming_effects_api);
+
+api['primus:data'] = function({state, action}) {
+  var data, payload, type;
+  ({data} = action.payload);
+  ({type, payload} = action.payload.data);
+  if (_.includes(keys_incoming_effects_api, type)) {
+    return incoming_effects_api[type]({state, action, data});
+  } else {
+    return state;
+  }
+};
+
+// these that require primus write sideeffects can be
+// handled by a single function from now on so additions
+// should require code edits in fewer places.
+api['primus_hotwire'] = function({state, action}) {
+  return state.setIn(['effects', shortid()], {
+    type: 'primus_hotwire',
+    payload: action.payload
+  });
+};
+
+// arq['search_struct'] = ({ state, action }) ->
+//     state.setIn ['desires', shortid()],
+//         type: 'search_struct_nodemem'
+//         payload: action.payload
+keys_api = _.keys(api);
+
+tami_index = function(state, action) {
+  state = state.setIn(['effects'], Imm.Map({}));
+  if (_.includes(keys_api, action.type)) {
+    return api[action.type]({state, action});
+  } else {
+    c('noop with ', action.type);
+    return state;
+  }
+};
+
+exports.default = tami_index;
+
+
+/***/ }),
+/* 96 */
+/***/ (function(module, exports) {
+
 exports.default = {
-  lookup: {
+  tami_index: {
     // jobs: Imm.Map({})
     effects: Imm.Map({
       [`${shortid()}`]: {
@@ -45203,7 +45257,7 @@ exports.default = {
 
 
 /***/ }),
-/* 96 */
+/* 97 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var arq, effects_f, keys_arq;
@@ -45211,7 +45265,7 @@ var arq, effects_f, keys_arq;
 arq = {};
 
 // arq = assign arq, require('./side_effects/init.coffee').default
-arq = _.assign(arq, __webpack_require__(97).default);
+arq = _.assign(arq, __webpack_require__(98).default);
 
 keys_arq = _.keys(arq);
 
@@ -45219,7 +45273,7 @@ effects_f = function({store}) {
   return function({state_js}) {
     var effect, key_id, ref, results, state;
     state = state_js;
-    ref = state.lookup.effects;
+    ref = state.tami_index.effects;
     results = [];
     for (key_id in ref) {
       effect = ref[key_id];
@@ -45237,7 +45291,7 @@ exports.default = effects_f;
 
 
 /***/ }),
-/* 97 */
+/* 98 */
 /***/ (function(module, exports) {
 
 var api;
@@ -45247,6 +45301,7 @@ api = {};
 api['primus_hotwire'] = function({effect, state}) {
   var payload, type;
   ({type, payload} = effect.payload);
+  // c 'writing'
   return primus.write({type, payload});
 };
 
@@ -45275,15 +45330,20 @@ exports.default = api;
 
 
 /***/ }),
-/* 98 */
+/* 99 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var comp, home, map_dispatch_to_props, map_state_to_props, render;
+var comp, dashboard, dashboard_001, home, map_dispatch_to_props, map_state_to_props, render;
 
-home = rc(__webpack_require__(99).default);
+home = rc(__webpack_require__(100).default);
+
+dashboard = rc(__webpack_require__(101).default);
+
+dashboard_001 = rc(__webpack_require__(102).default);
 
 render = function() {
-  return home();
+  // home()
+  return dashboard_001();
 };
 
 comp = rr({
@@ -45302,7 +45362,7 @@ exports.default = connect(map_state_to_props, map_dispatch_to_props)(comp);
 
 
 /***/ }),
-/* 99 */
+/* 100 */
 /***/ (function(module, exports) {
 
 var comp, map_dispatch_to_props, map_idx_to_color, map_state_to_props;
@@ -45378,7 +45438,7 @@ comp = rr({
 });
 
 map_state_to_props = function(state) {
-  return state.get('lookup').toJS();
+  return state.get('tami_index').toJS();
 };
 
 map_dispatch_to_props = function(dispatch) {
@@ -45389,57 +45449,266 @@ exports.default = connect(map_state_to_props, map_dispatch_to_props)(comp);
 
 
 /***/ }),
-/* 100 */
+/* 101 */
 /***/ (function(module, exports) {
 
-var api, incoming_effects_api, keys_api, keys_incoming_effects_api, tami_index;
+var comp, map_dispatch_to_props, map_state_to_props;
 
-api = {};
-
-incoming_effects_api = {};
-
-// concord_channel['dctn_initial_blob'] = ({ state, action, data }) ->
-//     state.setIn ['dctn_blob'], data.payload.blob
-keys_incoming_effects_api = _.keys(incoming_effects_api);
-
-api['primus:data'] = function({state, action}) {
-  var data, payload, type;
-  ({data} = action.payload);
-  ({type, payload} = action.payload.data);
-  if (_.includes(keys_incoming_effects_api, type)) {
-    return incoming_effects_api[type]({state, action, data});
-  } else {
-    return state;
+comp = rr({
+  getInitialState: function() {
+    return {};
+  },
+  render: function() {
+    // div null, (p null, 'hello')
+    return div({
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: 'lightgrey'
+      }
+    }, h1({
+      style: {
+        textAlign: 'center'
+      }
+    }, "Tami Index"), div({
+      style: {
+        display: 'flex'
+      }
+    }, div({
+      style: {
+        display: 'flex',
+        flexDirection: 'column'
+      }
+    }, h4({
+      style: {}
+    }, "Search"), input({
+      placeholder: 'search-000'
+    }), input({
+      placeholder: 'search-001'
+    })), div({
+      style: {}
+    }, h5(null, 'search-001'))));
   }
+});
+
+map_state_to_props = function(state) {
+  return state.get('tami_index').toJS();
 };
 
-// these that require primus write sideeffects can be
-// handled by a single function from now on so additions
-// should require code edits in fewer places.
-api['primus_hotwire'] = function({state, action}) {
-  return state.setIn(['effects', shortid()], {
-    type: 'primus_hotwire',
-    payload: action.payload
-  });
+map_dispatch_to_props = function(dispatch) {
+  return {};
 };
 
-// arq['search_struct'] = ({ state, action }) ->
-//     state.setIn ['desires', shortid()],
-//         type: 'search_struct_nodemem'
-//         payload: action.payload
-keys_api = _.keys(api);
+exports.default = connect(map_state_to_props, map_dispatch_to_props)(comp);
 
-tami_index = function(state, action) {
-  state = state.setIn(['effects'], Imm.Map({}));
-  if (_.includes(keys_api, action.type)) {
-    return api[action.type]({state, action});
-  } else {
-    c('noop with ', action.type);
-    return state;
+
+/***/ }),
+/* 102 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var comp, input_data, map_dispatch_to_props, map_state_to_props;
+
+input_data = rc(__webpack_require__(103).default);
+
+comp = rr({
+  getInitialState: function() {
+    return {
+      search_or_input: 'input'
+    };
+  },
+  render: function() {
+    // div null, (p null, 'hello')
+    return div({
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        backgroundColor: 'lightgrey'
+      }
+    }, h1({
+      style: {
+        textAlign: 'center'
+      }
+    }, "Tami Index"), div({
+      style: {
+        display: 'flex',
+        justifyContent: 'space-around'
+      }
+    }, button({
+      style: {
+        opacity: this.state.search_or_input === 'search' ? .3 : 1,
+        cursor: 'pointer'
+      },
+      onClick: () => {
+        return this.setState({
+          search_or_input: 'search'
+        });
+      }
+    }, "search data"), button({
+      style: {
+        opacity: this.state.search_or_input === 'input' ? .3 : 1,
+        cursor: 'pointer'
+      },
+      onClick: () => {
+        return this.setState({
+          search_or_input: 'input'
+        });
+      }
+    }, "input data")), this.state.search_or_input === 'input' ? input_data() : h4(null, 'search data placeholder'));
   }
+});
+
+map_state_to_props = function(state) {
+  return state.get('tami_index').toJS();
 };
 
-exports.default = tami_index;
+map_dispatch_to_props = function(dispatch) {
+  return {};
+};
+
+exports.default = connect(map_state_to_props, map_dispatch_to_props)(comp);
+
+
+/***/ }),
+/* 103 */
+/***/ (function(module, exports) {
+
+var IN_PROGRESS, PREPARE, comp, map_dispatch_to_props, map_state_to_props;
+
+PREPARE = 'prepare';
+
+IN_PROGRESS = 'in_progress';
+
+// COMPLETED = 'completed'
+comp = rr({
+  form_not_ready: function() {
+    return (this.state.stuff === '') || (this.state.owner === '') || (this.state.slot === '');
+  },
+  getInitialState: function() {
+    return {
+      form_status: PREPARE,
+      slot: '',
+      owner: '',
+      stuff: ''
+    };
+  },
+  render: function() {
+    return div({
+      style: {
+        display: 'flex',
+        flexDirection: 'column'
+      }
+    }, h3({
+      style: {
+        textAlign: 'center'
+      }
+    }, 'input data'), input({
+      disabled: this.state.form_status === IN_PROGRESS,
+      style: {
+        textAlign: 'center',
+        margin: `${.02 * wh}px ${.02 * wh}px ${.02 * wh}px ${.02 * wh}px`
+      },
+      placeholder: 'space slot',
+      onChange: (e) => {
+        var val;
+        // c 'space slot', e.currentTarget.value
+        val = e.currentTarget.value;
+        this.setState({
+          slot: val
+        });
+        return this.props.lookahead({
+          field_type: 'slot',
+          field_str: val
+        });
+      }
+    }), input({
+      disabled: this.state.form_status === IN_PROGRESS,
+      style: {
+        textAlign: 'center',
+        margin: `${.02 * wh}px ${.02 * wh}px ${.02 * wh}px ${.02 * wh}px`
+      },
+      placeholder: 'the owner',
+      onChange: (e) => {
+        var val;
+        val = e.currentTarget.value;
+        this.setState({
+          owner: val
+        });
+        return this.props.lookahead({
+          field_type: 'owner',
+          field_str: val
+        });
+      }
+    }), textArea({
+      disabled: this.state.form_status === IN_PROGRESS,
+      style: {
+        margin: `${.02 * wh}px ${.02 * wh}px ${.02 * wh}px ${.02 * wh}px`,
+        textAlign: 'center',
+        height: .2 * wh,
+        width: .3 * ww
+      },
+      placeholder: 'the stuff',
+      onChange: (e) => {
+        var val;
+        val = e.currentTarget.value;
+        this.setState({
+          stuff: val
+        });
+        return this.props.lookahead({
+          field_type: 'stuff',
+          field_str: val
+        });
+      }
+    }), button({
+      style: {
+        cursor: 'pointer',
+        height: .05 * wh
+      },
+      disabled: this.form_not_ready() || (this.state.form_status === IN_PROGRESS),
+      onClick: () => {
+        if ((this.state.stuff !== '') && (this.state.slot !== '') && (this.state.owner !== '')) {
+          this.props.submit_data_form({
+            slot: this.state.slot,
+            owner: this.state.owner,
+            stuff: this.state.stuff
+          });
+          return this.setState({
+            form_status: IN_PROGRESS
+          });
+        }
+      }
+    }, "submit data form"));
+  }
+});
+
+map_state_to_props = function(state) {
+  return state.get('tami_index').toJS();
+};
+
+map_dispatch_to_props = function(dispatch) {
+  return {
+    lookahead: function({field_type, field_str}) {
+      return dispatch({
+        type: 'primus_hotwire',
+        payload: {
+          type: 'lookahead',
+          payload: {field_type, field_str}
+        }
+      });
+    },
+    submit_data_form: function({slot, owner, stuff}) {
+      return dispatch({
+        type: 'primus_hotwire',
+        payload: {
+          type: 'submit_data_form',
+          payload: {slot, owner, stuff}
+        }
+      }, "submit_data_form");
+    }
+  };
+};
+
+exports.default = connect(map_state_to_props, map_dispatch_to_props)(comp);
 
 
 /***/ })

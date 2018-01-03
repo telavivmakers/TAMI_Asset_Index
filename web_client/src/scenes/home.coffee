@@ -52,7 +52,7 @@ comp = rr
 
 
 map_state_to_props = (state) ->
-    state.get('lookup').toJS()
+    state.get('tami_index').toJS()
 
 map_dispatch_to_props = (dispatch) ->
     {}

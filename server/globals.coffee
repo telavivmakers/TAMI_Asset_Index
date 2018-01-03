@@ -12,7 +12,6 @@ global.Imm = require 'immutable'
 global.shortid = require 'shortid'
 
 
-
 Redis = require 'redis'
 
 Bluebird.promisifyAll(Redis.RedisClient.prototype)
