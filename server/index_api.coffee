@@ -5,87 +5,129 @@
 owner_book = 'OWNER_BOOK'
 slot_book = 'SLOT_BOOK'
 
+record_list = 'RECORD_LIST'
+
+# NOTE inconsistent capitalisation of string constants between
+# client and server side
 
 
 index_api = {}
 
 
-owner_model = ->
-    owner_id: v4()
-    record_list: v4() # instead of maintaining separate lists of stuff and slots we could just have one list with records that contain a timestamp, an owner-id, a slot-id, and a stuff string. this way the same records could be stored in the record list of both owners and slots.  In fact, using the lambda-architecture concept, we could just do everything as a list of timestamped records of this type, with the sense and structure provided by a reducer function.
-    # We would still have owner hashes and slot hashes, but they
-    # wouldn't need to keep references to the stuff records.  They would just need to store identitying and contact information.
+owner_model = ({ owner_name }) ->
+    id: v4()
+    timestamp: Date.now()
+    owner_name: owner_name # same as that used in the owner book
+    identifying_information: ''
 
-slot_model = ->
-    slot_id: v4()
+slot_model = ({ slot_name }) ->
+    id: v4()
+    timestamp: Date.now()
+    slot_name: slot_name
+    identifying_information: ''
 
 
+record_model = ({ owner_id, slot_id, stuff }) ->
+    id: v4()
+    timestamp: Date.now()
+    slot_id: slot_id
+    owner_id: owner_id
+    stuff: stuff
 
 
-
-
-get_make_owner_id = Bluebird.promisify ({ owner }, cb) ->
-    redis.hexistsAsync owner_book, owner
+get_make_owner = Bluebird.promisify ({ owner_name }, cb0) ->
+    redis.hexistsAsync owner_book, owner_name
     .then (res0) ->
         if res0 is 0
-            owner_id = v4()
+            owner = owner_model { owner_name }
             flow.parallel [
-                (cb) ->
-                    redis.hsetAsync owner_book, owner, owner_id
+                (cb1) ->
+                    redis.hsetAsync owner_book, owner_name, owner.id
                     .then (res1) ->
-                        cb null, owner_id
-                (cb) ->
-                    redis.hmsetAsync
-
-            ], (err, res3) ->
-
-
+                        cb1 null, owner.id
+                (cb1) ->
+                    redis.hmsetAsync owner.id, owner
+                    .then (err, res1) ->
+                        cb1 null, res1 # todo err handling
+            ], (err3, res8) ->
+                cb0 null, owner.id
         else
             redis.hgetAsync owner_book, owner
-            .then (res2) ->
-                cb null, res2
+            .then (owner_id) ->
+                cb0 null, owner_id
 
 
     # redis.hgetAsync owner_book, owner
 
-get_make_slot_id = Bluebird.promisify ({ slot }, cb) ->
-    redis.hexistsAsync slot_book, slot
+get_make_slot = Bluebird.promisify ({ slot_name }, cb0) ->
+    redis.hexistsAsync slot_book, slot_name
     .then (res0) ->
         if res0 is 0
-            slot_id = v4()
-            redis.hsetAsync slot_book, slot, slot_id
-            .then (res1) ->
-                cb null, slot_id
+            slot = slot_model { slot_name }
+            flow.parallel [
+                (cb1) ->
+                    redis.hsetAsync slot_book, slot_name, slot.id
+                    .then (res1) ->
+                        cb1 null, slot.id
+                (cb1) ->
+                    redis.hmsetAsync slot.id, slot
+                    .then (res1) ->
+                        cb1 null, slot.id
+            ], (err, res4) ->
+                cb0 null, slot.id
         else
-            redis.hgetAsync slot_book, slot
-            .then (res2) ->
-                cb null, res2
+            redis.hgetAsync slot_book, slot_name
+            .then (slot_id) ->
+                cb0 null, slot_id
 
 
 index_api.submit_data_form = ({ payload, spark }) ->
-    { slot, owner, stuff } = payload
-    timestamp = Date.now()
+    { slot_name, owner_name, stuff } = payload
+    # timestamp = Date.now()
     # does the owner exist ? if not then create
     # otherwise need to get their hash id
     # does the slot exist ? if not then create
     # either way get the hash id
     flow.parallel [
         (cb) ->
-            get_make_owner_id { owner }
+            get_make_owner { owner_name }
             .then (owner_id) ->
                 cb null, owner_id
         (cb) ->
-            get_make_slot_id { slot }
+            get_make_slot { slot_name }
             .then (slot_id) ->
                 cb null, slot_id
     ], (err, res) ->
         c 'have results from parallel', res
         [ owner_id, slot_id ] = res
 
-        redis.hsetAsync owner_id, 'stuff', stuff
-        redis.hsetAsync slot_id, 'stuff', stuff
-        redis.hsetAsync owner_id, 'slot', slot_id
-        redis.hsetAsync slot_id, 'owner', owner_id
+        record = record_model { owner_id, slot_id, stuff }
+
+        flow.parallel [
+            (cb5) ->
+                redis.hmsetAsync record.id, record
+                .then (err8, res8) ->
+                    cb5 null, res8
+            (cb5) ->
+                redis.lpushAsync record_list, record.id
+                .then (err8, res8) ->
+                    cb5 null, res8
+        ], (err3, res3) ->
+            # todo err handle
+
+            # setTimeout ->
+            spark.write
+                type: 'res_submit_data_form'
+                payload:
+                    status: 'OK'
+            # , 2000
+
+
+
+        # redis.hsetAsync owner_id, 'stuff', stuff
+        # redis.hsetAsync slot_id, 'stuff', stuff
+        # redis.hsetAsync owner_id, 'slot', slot_id
+        # redis.hsetAsync slot_id, 'owner', owner_id
         # add stuff to owner-hash and slot-hash
         # add owner to slot-hash
         # add slot to owner-hash

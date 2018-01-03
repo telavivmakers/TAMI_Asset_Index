@@ -4,12 +4,21 @@
 
 api = {}
 
-
-
+PREPARE = 'prepare'
+IN_PROGRESS = 'in_progress'
+COMPLETED = 'completed'
+SUBMIT_DATA_JOB_STATUS = 'SUBMIT_DATA_JOB_STATUS'
 
 
 
 incoming_effects_api = {}
+
+
+incoming_effects_api.res_submit_data_form = ({ state, action, data }) ->
+    c 'received okay on submit data form'
+
+    state = state.set SUBMIT_DATA_JOB_STATUS, COMPLETED
+    state
 
 
 # concord_channel['dctn_initial_blob'] = ({ state, action, data }) ->
@@ -21,6 +30,15 @@ keys_incoming_effects_api = _.keys incoming_effects_api
 
 
 
+
+
+
+
+api.submit_data_form = ({ state, action }) ->
+    state = state.set SUBMIT_DATA_JOB_STATUS, IN_PROGRESS
+    state.setIn ['effects', shortid()],
+        type: 'submit_data_form'
+        payload: action.payload
 
 api['primus:data'] = ({ state, action }) ->
     { data } = action.payload

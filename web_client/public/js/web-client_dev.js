@@ -45190,15 +45190,37 @@ exports['default'] = thunk;
 /* 95 */
 /***/ (function(module, exports) {
 
-var api, incoming_effects_api, keys_api, keys_incoming_effects_api, tami_index;
+var COMPLETED, IN_PROGRESS, PREPARE, SUBMIT_DATA_JOB_STATUS, api, incoming_effects_api, keys_api, keys_incoming_effects_api, tami_index;
 
 api = {};
 
+PREPARE = 'prepare';
+
+IN_PROGRESS = 'in_progress';
+
+COMPLETED = 'completed';
+
+SUBMIT_DATA_JOB_STATUS = 'SUBMIT_DATA_JOB_STATUS';
+
 incoming_effects_api = {};
+
+incoming_effects_api.res_submit_data_form = function({state, action, data}) {
+  c('received okay on submit data form');
+  state = state.set(SUBMIT_DATA_JOB_STATUS, COMPLETED);
+  return state;
+};
 
 // concord_channel['dctn_initial_blob'] = ({ state, action, data }) ->
 //     state.setIn ['dctn_blob'], data.payload.blob
 keys_incoming_effects_api = _.keys(incoming_effects_api);
+
+api.submit_data_form = function({state, action}) {
+  state = state.set(SUBMIT_DATA_JOB_STATUS, IN_PROGRESS);
+  return state.setIn(['effects', shortid()], {
+    type: 'submit_data_form',
+    payload: action.payload
+  });
+};
 
 api['primus:data'] = function({state, action}) {
   var data, payload, type;
@@ -45244,9 +45266,20 @@ exports.default = tami_index;
 /* 96 */
 /***/ (function(module, exports) {
 
+var COMPLETED, IN_PROGRESS, PREPARE, SUBMIT_DATA_JOB_STATUS;
+
+PREPARE = 'prepare';
+
+IN_PROGRESS = 'in_progress';
+
+COMPLETED = 'completed';
+
+SUBMIT_DATA_JOB_STATUS = 'SUBMIT_DATA_JOB_STATUS';
+
 exports.default = {
   tami_index: {
     // jobs: Imm.Map({})
+    SUBMIT_DATA_JOB_STATUS: PREPARE,
     effects: Imm.Map({
       [`${shortid()}`]: {
         type: 'init_primus'
@@ -45280,7 +45313,7 @@ effects_f = function({store}) {
       if (_.includes(keys_arq, effect.type)) {
         results.push(arq[effect.type]({effect, store}));
       } else {
-        results.push(void 0);
+        results.push(c('no-op with in effects with type', effect.type));
       }
     }
     return results;
@@ -45297,6 +45330,12 @@ exports.default = effects_f;
 var api;
 
 api = {};
+
+api.submit_data_form = function({effect, state}) {
+  var payload, type;
+  ({type, payload} = effect);
+  return primus.write({type, payload});
+};
 
 api['primus_hotwire'] = function({effect, state}) {
   var payload, type;
@@ -45573,22 +45612,26 @@ exports.default = connect(map_state_to_props, map_dispatch_to_props)(comp);
 /* 103 */
 /***/ (function(module, exports) {
 
-var IN_PROGRESS, PREPARE, comp, map_dispatch_to_props, map_state_to_props;
+// TODO factor this out to a common constants shared resource file
+var COMPLETED, IN_PROGRESS, PREPARE, SUBMIT_DATA_JOB_STATUS, comp, map_dispatch_to_props, map_state_to_props;
 
 PREPARE = 'prepare';
 
 IN_PROGRESS = 'in_progress';
 
-// COMPLETED = 'completed'
+COMPLETED = 'completed';
+
+SUBMIT_DATA_JOB_STATUS = 'SUBMIT_DATA_JOB_STATUS';
+
 comp = rr({
   form_not_ready: function() {
-    return (this.state.stuff === '') || (this.state.owner === '') || (this.state.slot === '');
+    return (this.state.stuff === '') || (this.state.owner_name === '') || (this.state.slot_name === '');
   },
   getInitialState: function() {
     return {
       form_status: PREPARE,
-      slot: '',
-      owner: '',
+      slot_name: '',
+      owner_name: '',
       stuff: ''
     };
   },
@@ -45596,7 +45639,8 @@ comp = rr({
     return div({
       style: {
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        alignItems: 'center'
       }
     }, h3({
       style: {
@@ -45608,16 +45652,16 @@ comp = rr({
         textAlign: 'center',
         margin: `${.02 * wh}px ${.02 * wh}px ${.02 * wh}px ${.02 * wh}px`
       },
-      placeholder: 'space slot',
+      placeholder: 'space slot_name',
       onChange: (e) => {
         var val;
-        // c 'space slot', e.currentTarget.value
+        // c 'space slot_name', e.currentTarget.value
         val = e.currentTarget.value;
         this.setState({
-          slot: val
+          slot_name: val
         });
         return this.props.lookahead({
-          field_type: 'slot',
+          field_type: 'slot_name',
           field_str: val
         });
       }
@@ -45627,15 +45671,15 @@ comp = rr({
         textAlign: 'center',
         margin: `${.02 * wh}px ${.02 * wh}px ${.02 * wh}px ${.02 * wh}px`
       },
-      placeholder: 'the owner',
+      placeholder: 'the owner_name',
       onChange: (e) => {
         var val;
         val = e.currentTarget.value;
         this.setState({
-          owner: val
+          owner_name: val
         });
         return this.props.lookahead({
-          field_type: 'owner',
+          field_type: 'owner_name',
           field_str: val
         });
       }
@@ -45666,10 +45710,10 @@ comp = rr({
       },
       disabled: this.form_not_ready() || (this.state.form_status === IN_PROGRESS),
       onClick: () => {
-        if ((this.state.stuff !== '') && (this.state.slot !== '') && (this.state.owner !== '')) {
+        if ((this.state.stuff !== '') && (this.state.slot_name !== '') && (this.state.owner_name !== '')) {
           this.props.submit_data_form({
-            slot: this.state.slot,
-            owner: this.state.owner,
+            slot_name: this.state.slot_name,
+            owner_name: this.state.owner_name,
             stuff: this.state.stuff
           });
           return this.setState({
@@ -45677,7 +45721,25 @@ comp = rr({
           });
         }
       }
-    }, "submit data form"));
+    }, "submit data form"), c(this.props.SUBMIT_DATA_JOB_STATUS, 'job status'), this.props.SUBMIT_DATA_JOB_STATUS !== PREPARE ? svg({
+      // x: 800
+      // y: 400
+      width: 50,
+      height: 70
+    }, rect({
+      x: 0,
+      y: 20,
+      width: 50,
+      height: 50,
+      fill: this.props.SUBMIT_DATA_JOB_STATUS === IN_PROGRESS ? 'grey' : 'green',
+      fillOpacity: .3
+    }), text({
+      x: 0,
+      y: 40,
+      fontSize: .02 * wh,
+      fontFamily: 'sans',
+      fill: this.props.SUBMIT_DATA_JOB_STATUS === IN_PROGRESS ? 'yellow' : 'chartreuse'
+    }, this.props.SUBMIT_DATA_JOB_STATUS === IN_PROGRESS ? '...upload in progress' : '...upload completed')) : void 0);
   }
 });
 
@@ -45696,13 +45758,12 @@ map_dispatch_to_props = function(dispatch) {
         }
       });
     },
-    submit_data_form: function({slot, owner, stuff}) {
+    submit_data_form: function({slot_name, owner_name, stuff}) {
       return dispatch({
-        type: 'primus_hotwire',
-        payload: {
-          type: 'submit_data_form',
-          payload: {slot, owner, stuff}
-        }
+        // type: 'primus_hotwire'
+        // payload:
+        type: 'submit_data_form',
+        payload: {slot_name, owner_name, stuff}
       }, "submit_data_form");
     }
   };

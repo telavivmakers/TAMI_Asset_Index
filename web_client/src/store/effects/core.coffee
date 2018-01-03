@@ -3,6 +3,13 @@
 api = {}
 
 
+
+api.submit_data_form = ({ effect, state }) ->
+    { type, payload } = effect
+    primus.write { type, payload }
+
+
+
 api['primus_hotwire'] = ({ effect, state }) ->
     { type, payload } = effect.payload
     # c 'writing'
