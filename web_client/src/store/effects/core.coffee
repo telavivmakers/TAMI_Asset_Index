@@ -4,7 +4,8 @@ api = {}
 
 
 
-api.submit_data_form = ({ effect, state }) ->
+api.submit_data_form = ({ effect, state, store  }) ->
+    # c arguments
     { type, payload } = effect
     primus.write { type, payload }
 
@@ -23,13 +24,13 @@ api['primus_hotwire'] = ({ effect, state }) ->
 #         payload: desire.payload
 
 
-api['init_primus'] = ({ effect, store }) ->
+api['init_primus'] = ({ effect, store, state }) ->
     c 'initialising primus'
     primus.on 'data', (data) ->
         c 'primus received data', data
         store.dispatch
             type: 'primus:data'
-            payload: { data }
+            payload: { data, store }
 
     setInterval =>
         primus.write

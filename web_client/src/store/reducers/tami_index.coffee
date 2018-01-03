@@ -14,10 +14,16 @@ SUBMIT_DATA_JOB_STATUS = 'SUBMIT_DATA_JOB_STATUS'
 incoming_effects_api = {}
 
 
-incoming_effects_api.res_submit_data_form = ({ state, action, data }) ->
+incoming_effects_api.res_submit_data_form = ({ state, action, data, store }) ->
     c 'received okay on submit data form'
 
     state = state.set SUBMIT_DATA_JOB_STATUS, COMPLETED
+
+    setTimeout =>
+        store.dispatch
+            type: 'set_submit_form_prepare'
+    , 2500
+
     state
 
 
@@ -30,6 +36,8 @@ keys_incoming_effects_api = _.keys incoming_effects_api
 
 
 
+api.set_submit_form_prepare = ({ state, action }) ->
+    state.set SUBMIT_DATA_JOB_STATUS, PREPARE
 
 
 
@@ -41,10 +49,10 @@ api.submit_data_form = ({ state, action }) ->
         payload: action.payload
 
 api['primus:data'] = ({ state, action }) ->
-    { data } = action.payload
+    { data, store } = action.payload
     { type, payload } = action.payload.data
     if _.includes(keys_incoming_effects_api, type)
-        incoming_effects_api[type] { state, action, data }
+        incoming_effects_api[type] { state, action, data, store }
     else
         state
 
@@ -71,6 +79,9 @@ keys_api = _.keys api
 
 
 tami_index = (state, action) ->
+    # c arguments
+    # c 'store', store
+    # c 'dispatch', dispatch
     state = state.setIn ['effects'], Imm.Map({})
     if _.includes(keys_api, action.type)
         api[action.type]({ state, action })

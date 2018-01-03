@@ -14,7 +14,7 @@ effects_f = ({ store }) ->
         state = state_js
         for key_id, effect of state.tami_index.effects
             if _.includes(keys_arq, effect.type)
-                arq[effect.type] { effect , store }
+                arq[effect.type] { effect , store, state }
             else
                 c 'no-op with in effects with type', effect.type
 

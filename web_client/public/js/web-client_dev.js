@@ -45204,15 +45204,24 @@ SUBMIT_DATA_JOB_STATUS = 'SUBMIT_DATA_JOB_STATUS';
 
 incoming_effects_api = {};
 
-incoming_effects_api.res_submit_data_form = function({state, action, data}) {
+incoming_effects_api.res_submit_data_form = function({state, action, data, store}) {
   c('received okay on submit data form');
   state = state.set(SUBMIT_DATA_JOB_STATUS, COMPLETED);
+  setTimeout(() => {
+    return store.dispatch({
+      type: 'set_submit_form_prepare'
+    });
+  }, 2500);
   return state;
 };
 
 // concord_channel['dctn_initial_blob'] = ({ state, action, data }) ->
 //     state.setIn ['dctn_blob'], data.payload.blob
 keys_incoming_effects_api = _.keys(incoming_effects_api);
+
+api.set_submit_form_prepare = function({state, action}) {
+  return state.set(SUBMIT_DATA_JOB_STATUS, PREPARE);
+};
 
 api.submit_data_form = function({state, action}) {
   state = state.set(SUBMIT_DATA_JOB_STATUS, IN_PROGRESS);
@@ -45223,11 +45232,11 @@ api.submit_data_form = function({state, action}) {
 };
 
 api['primus:data'] = function({state, action}) {
-  var data, payload, type;
-  ({data} = action.payload);
+  var data, payload, store, type;
+  ({data, store} = action.payload);
   ({type, payload} = action.payload.data);
   if (_.includes(keys_incoming_effects_api, type)) {
-    return incoming_effects_api[type]({state, action, data});
+    return incoming_effects_api[type]({state, action, data, store});
   } else {
     return state;
   }
@@ -45250,6 +45259,9 @@ api['primus_hotwire'] = function({state, action}) {
 keys_api = _.keys(api);
 
 tami_index = function(state, action) {
+  // c arguments
+  // c 'store', store
+  // c 'dispatch', dispatch
   state = state.setIn(['effects'], Imm.Map({}));
   if (_.includes(keys_api, action.type)) {
     return api[action.type]({state, action});
@@ -45311,7 +45323,7 @@ effects_f = function({store}) {
     for (key_id in ref) {
       effect = ref[key_id];
       if (_.includes(keys_arq, effect.type)) {
-        results.push(arq[effect.type]({effect, store}));
+        results.push(arq[effect.type]({effect, store, state}));
       } else {
         results.push(c('no-op with in effects with type', effect.type));
       }
@@ -45331,8 +45343,9 @@ var api;
 
 api = {};
 
-api.submit_data_form = function({effect, state}) {
+api.submit_data_form = function({effect, state, store}) {
   var payload, type;
+  // c arguments
   ({type, payload} = effect);
   return primus.write({type, payload});
 };
@@ -45348,13 +45361,13 @@ api['primus_hotwire'] = function({effect, state}) {
 //     primus.write
 //         type: 'build_selection'
 //         payload: desire.payload
-api['init_primus'] = function({effect, store}) {
+api['init_primus'] = function({effect, store, state}) {
   c('initialising primus');
   primus.on('data', function(data) {
     c('primus received data', data);
     return store.dispatch({
       type: 'primus:data',
-      payload: {data}
+      payload: {data, store}
     });
   });
   return setInterval(() => {
@@ -45627,9 +45640,20 @@ comp = rr({
   form_not_ready: function() {
     return (this.state.stuff === '') || (this.state.owner_name === '') || (this.state.slot_name === '');
   },
+  componentWillReceiveProps: function(nextProps) {
+    if (nextProps.SUBMIT_DATA_JOB_STATUS === COMPLETED) {
+      c('is completed should reset state');
+      this.setState({
+        slot_name: '',
+        owner_name: '',
+        stuff: ''
+      });
+      return this.ta.value = '';
+    }
+  },
   getInitialState: function() {
     return {
-      form_status: PREPARE,
+      // form_status: PREPARE
       slot_name: '',
       owner_name: '',
       stuff: ''
@@ -45647,12 +45671,13 @@ comp = rr({
         textAlign: 'center'
       }
     }, 'input data'), input({
-      disabled: this.state.form_status === IN_PROGRESS,
+      disabled: this.props.SUBMIT_DATA_JOB_STATUS !== PREPARE,
       style: {
         textAlign: 'center',
         margin: `${.02 * wh}px ${.02 * wh}px ${.02 * wh}px ${.02 * wh}px`
       },
       placeholder: 'space slot_name',
+      value: this.state.slot_name,
       onChange: (e) => {
         var val;
         // c 'space slot_name', e.currentTarget.value
@@ -45666,12 +45691,13 @@ comp = rr({
         });
       }
     }), input({
-      disabled: this.state.form_status === IN_PROGRESS,
+      disabled: this.props.SUBMIT_DATA_JOB_STATUS !== PREPARE,
       style: {
         textAlign: 'center',
         margin: `${.02 * wh}px ${.02 * wh}px ${.02 * wh}px ${.02 * wh}px`
       },
       placeholder: 'the owner_name',
+      value: this.state.owner_name,
       onChange: (e) => {
         var val;
         val = e.currentTarget.value;
@@ -45684,7 +45710,7 @@ comp = rr({
         });
       }
     }), textArea({
-      disabled: this.state.form_status === IN_PROGRESS,
+      disabled: this.props.SUBMIT_DATA_JOB_STATUS !== PREPARE,
       style: {
         margin: `${.02 * wh}px ${.02 * wh}px ${.02 * wh}px ${.02 * wh}px`,
         textAlign: 'center',
@@ -45692,6 +45718,9 @@ comp = rr({
         width: .3 * ww
       },
       placeholder: 'the stuff',
+      ref: (ta) => {
+        return this.ta = ta;
+      },
       onChange: (e) => {
         var val;
         val = e.currentTarget.value;
@@ -45708,7 +45737,7 @@ comp = rr({
         cursor: 'pointer',
         height: .05 * wh
       },
-      disabled: this.form_not_ready() || (this.state.form_status === IN_PROGRESS),
+      disabled: this.form_not_ready() || (this.props.SUBMIT_DATA_JOB_STATUS !== PREPARE),
       onClick: () => {
         if ((this.state.stuff !== '') && (this.state.slot_name !== '') && (this.state.owner_name !== '')) {
           this.props.submit_data_form({
