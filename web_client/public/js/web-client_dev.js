@@ -45231,6 +45231,14 @@ api.submit_data_form = function({state, action}) {
   });
 };
 
+api.res_signup = function({state, payload}) {
+  var email, status;
+  ({status, email} = payload);
+  // NOTE this breaks pure functional pattern, not sure if it's significant
+  window.location.hash = 'dashboard';
+  return state;
+};
+
 api.signup = function({state, action}) {
   state = state.set('signup_status', 'sending');
   state = state.setIn(['effects', shortid()], {
@@ -45427,7 +45435,7 @@ api['init_primus'] = function({effect, store, state}) {
   }, 3000);
 };
 
-api.setup_listen_location = function({effect, state}) {
+api.setup_listen_location = function({effect, state, store}) {
   window.location.hash = 'ufo';
   return window.addEventListener('hashchange', function() {
     var location;
@@ -45458,6 +45466,8 @@ ufo = rc(__webpack_require__(104).default);
 
 render = function() {
   switch (this.props.hash_location) {
+    case 'dashboard':
+      return dashboard_001();
     case 'ufo':
       return ufo();
     default:

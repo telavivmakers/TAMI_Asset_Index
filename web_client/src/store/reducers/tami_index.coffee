@@ -63,7 +63,12 @@ api.submit_data_form = ({ state, action }) ->
 
 
 
+api.res_signup = ({ state, payload }) ->
+    { status, email } = payload
+    # NOTE this breaks pure functional pattern, not sure if it's significant
+    window.location.hash = 'dashboard'
 
+    state
 
 api.signup = ({ state, action }) ->
     state = state.set 'signup_status', 'sending'
@@ -71,8 +76,6 @@ api.signup = ({ state, action }) ->
         type: 'signup'
         payload: action.payload
     state
-
-
 
 api.res_check_email_avail = ({ state, payload }) ->
     state = state.set 'email_avail', payload

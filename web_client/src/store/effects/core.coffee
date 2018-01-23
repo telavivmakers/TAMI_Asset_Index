@@ -77,7 +77,7 @@ api['init_primus'] = ({ effect, store, state }) ->
 
 
 
-api.setup_listen_location = ({ effect, state }) ->
+api.setup_listen_location = ({ effect, state, store }) ->
     window.location.hash = 'ufo'
     window.addEventListener 'hashchange', ->
         location = window.location.hash.replace(/^#\/?|\/$/g, '').split('/')[0]

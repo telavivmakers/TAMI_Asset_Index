@@ -145,9 +145,6 @@ index_api.submit_data_form = ({ payload, spark }) ->
 index_api.signup = ({ payload, spark }) ->
     { email_candide, pwd_candide } = payload
     uid = v4()
-
-
-
     bcrypt.genSalt 10, (err, salt) ->
         if err then c err else
             bcrypt.hash pwd_candide, salt
@@ -155,10 +152,6 @@ index_api.signup = ({ payload, spark }) ->
                 # a pointless progress cb
             , (err2, hash) ->
                 if err2 then c err2 else
-                    # c 'have done with hash', hash
-                    #
-                    # bcrypt.compare pwd_candide, hash, (err, res3) ->
-                    #     c 'have test compare', res3
                     user_arq =
                         uid: uid
                         email: email_candide
@@ -181,10 +174,6 @@ index_api.signup = ({ payload, spark }) ->
                                 payload:
                                     status: 'SUCCESS'
                                     email: user_arq.email
-
-
-
-    # redis.hsetAsync
 
 
 

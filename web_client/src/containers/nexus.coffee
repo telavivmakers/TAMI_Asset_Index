@@ -10,6 +10,8 @@ ufo = rc require('../scenes/ufo.coffee').default
 
 render = ->
     switch @props.hash_location
+        when 'dashboard'
+            dashboard_001()
         when 'ufo'
             ufo()
         else 'routing error'
