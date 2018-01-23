@@ -30,3 +30,12 @@ It occured to me that it would be nice to have a perfect organisation and inform
 ### Extended possibilities:
 
 This could conceivably become a quite elaborate card-catalogue-esque system of organisation for all kinds of TAMI assets.  For example the electronic equipment and supplies could be tracked with the system.  Tools, materials, so on and so forth.
+
+
+- Lost and Found
+
+
+
+### App Design
+
+Web-app with primary focus on mobile compatibility.  Will follow pattern used recently for a commercial game.
