@@ -1,6 +1,6 @@
 
 
-
+bcrypt = require 'bcrypt-nodejs'
 
 owner_book = 'OWNER_BOOK'
 slot_book = 'SLOT_BOOK'
@@ -142,20 +142,64 @@ index_api.submit_data_form = ({ payload, spark }) ->
 
 
 
+index_api.signup = ({ payload, spark }) ->
+    { email_candide, pwd_candide } = payload
+    uid = v4()
+
+
+
+    bcrypt.genSalt 10, (err, salt) ->
+        if err then c err else
+            bcrypt.hash pwd_candide, salt
+            , ->
+                # a pointless progress cb
+            , (err2, hash) ->
+                if err2 then c err2 else
+                    # c 'have done with hash', hash
+                    #
+                    # bcrypt.compare pwd_candide, hash, (err, res3) ->
+                    #     c 'have test compare', res3
+                    user_arq =
+                        uid: uid
+                        email: email_candide
+                        hash: hash
+
+                    flow.parallel [
+                        (cb5) ->
+                            redis.hsetAsync 'users_index_by_email', user_arq.email, user_arq.uid
+                            .then (res4) ->
+                                cb5 null, 'done'
+
+                        (cb5) ->
+                            redis.hmsetAsync user_arq.uid, user_arq
+                            .then (res5) ->
+                                cb5 null, 'done'
+                    ], (err7, res7) ->
+                        if err7 then c err7 else
+                            spark.write
+                                type: 'res_signup'
+                                payload:
+                                    status: 'SUCCESS'
+                                    email: user_arq.email
+
+
+
+    # redis.hsetAsync
+
 
 
 
 index_api.check_email_avail = ({ payload, spark }) ->
-    c 'have payload for check email avail', payload
-
     redis.hexistsAsync 'users_index_by_email', payload.email_candide
     .then (re) ->
-        c 're on email avail', re
         if re is 0
-            c 'its avail'
             spark.write
                 type: 'res_check_email_avail'
                 payload: true
+        else
+            spark.write
+                type: 'res_check_email_avail'
+                payload: false
 
 
 

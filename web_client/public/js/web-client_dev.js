@@ -45240,8 +45240,8 @@ api.signup = function({state, action}) {
   return state;
 };
 
-api.res_check_email_avail = function({state, action}) {
-  state = state.set('email_avail', action.payload);
+api.res_check_email_avail = function({state, payload}) {
+  state = state.set('email_avail', payload);
   return state;
 };
 
@@ -45261,7 +45261,11 @@ api['primus:data'] = function({state, action}) {
   var data, payload, store, type;
   ({data, store} = action.payload);
   ({type, payload} = action.payload.data);
-  if (_.includes(keys_incoming_effects_api, type)) {
+  if (_.includes(keys_api, type)) {
+    return api[type]({state, action, data, store, payload});
+  } else if (_.includes(keys_incoming_effects_api, type)) { // NOTE I want to get rid of this construct and just work with a flat API and the 'res<whatever> protocol.'
+    // NOTE: although in some sense this compromises security as it gives
+    // the server a chance to operate on client state directly in a way it shouldn't be able to.
     return incoming_effects_api[type]({state, action, data, store});
   } else {
     return state;
@@ -45317,6 +45321,7 @@ SUBMIT_DATA_JOB_STATUS = 'SUBMIT_DATA_JOB_STATUS';
 exports.default = {
   tami_index: {
     // jobs: Imm.Map({})
+    email_avail: null,
     hash_location: 'ufo',
     SUBMIT_DATA_JOB_STATUS: PREPARE,
     effects: Imm.Map({
@@ -45381,7 +45386,6 @@ api.submit_data_form = function({effect, state, store}) {
 };
 
 api.signup = function({effect, state, store}) {
-  // { type, payload } = effect
   return primus.write({
     type: 'signup',
     payload: effect.payload
@@ -45868,7 +45872,7 @@ exports.default = connect(map_state_to_props, map_dispatch_to_props)(comp);
 /* 104 */
 /***/ (function(module, exports) {
 
-var blueyGrey, comp, email_entry, map_dispatch_to_props, map_state_to_props, marine62, neonBlue, password_entry, render;
+var blueyGrey, check_good_pwd, comp, email_entry, map_dispatch_to_props, map_state_to_props, marine62, neonBlue, password_entry, render;
 
 neonBlue = 'rgb(0, 229, 255)';
 
@@ -45880,9 +45884,13 @@ email_entry = function() {
   return form({
     onSubmit: (e) => {
       e.preventDefault();
-      return this.setState({
-        phase: 'password_entry'
-      });
+      if (this.props.email_avail) {
+        return this.setState({
+          phase: 'password_entry'
+        });
+      } else {
+        return c('TODO trigger a flashing animation');
+      }
     }
   }, input({
     style: {
@@ -45905,7 +45913,13 @@ email_entry = function() {
       });
       return this.props.check_email_avail({email_candide});
     }
-  }));
+  }), this.props.email_avail !== null ? p({
+    style: {
+      fontSize: .016 * wh,
+      fontStyle: 'italic',
+      color: this.props.email_avail ? 'lightgreen' : 'magenta'
+    }
+  }, this.props.email_avail ? "ok" : "This email is already associated with an account.") : void 0);
 };
 
 password_entry = function() {
@@ -45915,7 +45929,17 @@ password_entry = function() {
       flexDirection: 'column'
     },
     onSubmit: (e) => {
-      return e.preventDefault();
+      c('pwd entry go');
+      e.preventDefault();
+      if (this.props.email_avail && this.good_pwd) {
+        this.props.signup({
+          email_candide: this.state.email,
+          pwd_candide: this.state.password
+        });
+      }
+      return this.setState({
+        phase: 'waiting_pending'
+      });
     }
   }, input({
     style: {
@@ -45953,7 +45977,22 @@ password_entry = function() {
     },
     type: 'password',
     placeholder: 'CONFIRM PASSWORD'
-  }));
+  }), input({
+    style: {
+      fontStyle: 'italic',
+      backgroundColor: 'lightgreen',
+      borderRadius: .008 * wh
+    },
+    value: 'SUBMIT',
+    type: 'submit'
+  // 'submit'
+  }), this.good_pwd !== null ? p({
+    style: {
+      fontSize: .016 * wh,
+      fontStyle: 'italic',
+      color: this.good_pwd ? 'lightgreen' : 'magenta'
+    }
+  }, this.good_pwd ? "ok" : "Password must be at least 7 characters and must match in both fields.") : void 0);
 };
 
 render = function() {
@@ -45983,12 +46022,35 @@ render = function() {
         return email_entry.bind(this)();
       case 'password_entry':
         return password_entry.bind(this)();
+      case 'waiting_pending':
+        return div(null, 'waiting pending');
     }
   }).call(this));
 };
 
 // TODO : websocketts checks for email name availability
+check_good_pwd = function({next_pwd, next_pwd_confirm}) {
+  var ample_pwd, same_pwds;
+  same_pwds = next_pwd === next_pwd_confirm;
+  ample_pwd = next_pwd.length > 3;
+  return this.good_pwd = (function() {
+    if (next_pwd.length === 0) {
+      return null;
+    } else {
+      return same_pwds && ample_pwd;
+    }
+  })();
+};
+
 comp = rr({
+  good_pwd: null,
+  componentWillUpdate: function(nextProps, nextState) {
+    return this.check_good_pwd({
+      next_pwd: nextState.password,
+      next_pwd_confirm: nextState.password_confirm
+    });
+  },
+  check_good_pwd: check_good_pwd,
   getInitialState: function() {
     return {
       phase: 'email_entry',
@@ -46006,6 +46068,12 @@ map_state_to_props = function(state) {
 
 map_dispatch_to_props = function(dispatch) {
   return {
+    signup: function({email_candide, pwd_candide}) {
+      return dispatch({
+        type: 'signup',
+        payload: {email_candide, pwd_candide}
+      });
+    },
     check_email_avail: function({email_candide}) {
       return dispatch({
         type: 'check_email_avail',

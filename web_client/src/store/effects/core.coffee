@@ -35,7 +35,6 @@ api.submit_data_form = ({ effect, state, store  }) ->
 
 
 api.signup = ({ effect, state, store }) ->
-    # { type, payload } = effect
     primus.write
         type: 'signup'
         payload: effect.payload

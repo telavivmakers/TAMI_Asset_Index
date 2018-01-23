@@ -74,8 +74,8 @@ api.signup = ({ state, action }) ->
 
 
 
-api.res_check_email_avail = ({ state, action }) ->
-    state = state.set 'email_avail', action.payload
+api.res_check_email_avail = ({ state, payload }) ->
+    state = state.set 'email_avail', payload
     state
 
 api.check_email_avail = ({ state, action }) ->
@@ -92,7 +92,12 @@ api.hash_location_change = ({ state, action  }) ->
 api['primus:data'] = ({ state, action }) ->
     { data, store } = action.payload
     { type, payload } = action.payload.data
-    if _.includes(keys_incoming_effects_api, type)
+    if _.includes(keys_api, type)
+        api[type] { state, action, data, store, payload }
+
+    else if _.includes(keys_incoming_effects_api, type) # NOTE I want to get rid of this construct and just work with a flat API and the 'res<whatever> protocol.'
+        # NOTE: although in some sense this compromises security as it gives
+        # the server a chance to operate on client state directly in a way it shouldn't be able to.
         incoming_effects_api[type] { state, action, data, store }
     else
         state

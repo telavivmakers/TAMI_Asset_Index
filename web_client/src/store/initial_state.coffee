@@ -13,7 +13,7 @@ exports.default =
 
 
 
-
+        email_avail: null
 
 
 
