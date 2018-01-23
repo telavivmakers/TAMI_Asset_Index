@@ -14,11 +14,11 @@ comp = rr
                 display: 'flex'
                 flexDirection: 'column'
                 alignItems: 'center'
-                backgroundColor: 'lightgrey'
+                backgroundColor: 'lightgreen'
             h1
                 style:
                     textAlign: 'center'
-                "Tami Index"
+                "Admin Tami Index"
             div
                 style:
                     display: 'flex'

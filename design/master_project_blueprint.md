@@ -22,7 +22,7 @@
 
 Conceive phases/milestones
 
-Do the requirements, task
+Do the requirements, task breakdown process for
 
 
 ## Requirements List

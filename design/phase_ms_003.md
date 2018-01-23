@@ -48,6 +48,8 @@
 ## IV: Prospective Integrations:
 
 ### A: RFID system integration possibilites.
+### B: Visual mapping in the App of the space,
+perhaps identifying directly the location of the object visually.
 
 
 

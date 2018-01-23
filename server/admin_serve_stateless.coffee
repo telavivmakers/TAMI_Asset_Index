@@ -19,9 +19,9 @@ web_client_arq = do ->
     cookies = cookie_parser cookie_parser_secret
     cookie_parser_secret: cookie_parser_secret
     cookies: cookies
-    public_dir: path.resolve('..', 'web_client', 'public')
+    public_dir: path.resolve('..', 'web_client_admin', 'public')
     index_path: '/index-dev.html'
-    port: 3786
+    port: 3787
     primus_opts:
         transformer: 'websockets'
 
