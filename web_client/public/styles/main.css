@@ -1,0 +1,23 @@
+
+
+
+
+
+body {
+    font-family: sf_thin;
+    /* color: red; */
+}
+
+
+
+@font-face {
+  font-family: "sf_thin";
+  font-weight: 200;
+  src: url("https://applesocial.s3.amazonaws.com/assets/styles/fonts/sanfrancisco/sanfranciscodisplay-thin-webfont.woff");
+}
+
+@font-face {
+  font-family: "sf_medium";
+  /* font-weight: 600; */
+  src: url("https://applesocial.s3.amazonaws.com/assets/styles/fonts/sanfrancisco/sanfranciscodisplay-medium-webfont.woff");
+}

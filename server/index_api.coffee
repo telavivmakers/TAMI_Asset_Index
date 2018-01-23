@@ -145,7 +145,17 @@ index_api.submit_data_form = ({ payload, spark }) ->
 
 
 
+index_api.check_email_avail = ({ payload, spark }) ->
+    c 'have payload for check email avail', payload
 
+    redis.hexistsAsync 'users_index_by_email', payload.email_candide
+    .then (re) ->
+        c 're on email avail', re
+        if re is 0
+            c 'its avail'
+            spark.write
+                type: 'res_check_email_avail'
+                payload: true
 
 
 
@@ -164,29 +174,26 @@ index_api.lookahead = ({ payload, spark }) ->
 
 
 
+
+
+index_api.signin = ({ payload, spark }) ->
+
+
+
+
+
 keys_index_api = _.keys index_api
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 exports.default = ({ type, payload, spark }) ->
     if _.includes keys_index_api, type
         index_api[type] { payload, spark }
     else
         c color.yellow("no-op in index-api with type", on), color.cyan(type, on)
+
+
+
+
+
+
+# REDIS SETUP
+redis.hset 'users_index_by_email', '1@1', 'placeholder', (err, re) ->
+    c 'setup users index by email'

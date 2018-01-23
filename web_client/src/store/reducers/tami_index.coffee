@@ -2,6 +2,9 @@
 
 
 
+
+
+
 api = {}
 
 PREPARE = 'prepare'
@@ -48,6 +51,44 @@ api.submit_data_form = ({ state, action }) ->
         type: 'submit_data_form'
         payload: action.payload
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+api.signup = ({ state, action }) ->
+    state = state.set 'signup_status', 'sending'
+    state = state.setIn ['effects', shortid()],
+        type: 'signup'
+        payload: action.payload
+    state
+
+
+
+api.res_check_email_avail = ({ state, action }) ->
+    state = state.set 'email_avail', action.payload
+    state
+
+api.check_email_avail = ({ state, action }) ->
+    state = state.setIn ['effects', shortid()],
+        type: 'check_email_avail'
+        payload: action.payload
+    state
+
+
+api.hash_location_change = ({ state, action  }) ->
+    state.set 'hash_location', action.payload.location
+
+
 api['primus:data'] = ({ state, action }) ->
     { data, store } = action.payload
     { type, payload } = action.payload.data
@@ -86,7 +127,7 @@ tami_index = (state, action) ->
     if _.includes(keys_api, action.type)
         api[action.type]({ state, action })
     else
-        c 'noop with ', action.type
+        c 'reducer noop with ', action.type
         state
 
 

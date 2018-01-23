@@ -3,6 +3,7 @@
         "async": "latest",
         "bash-color": "latest",
         "bluebird": "latest",
+        "bcrypt-nodejs": "latest",
         "coffeescript": "next",
         "coffee-script": "latest",
         "coffee-loader": "latest",

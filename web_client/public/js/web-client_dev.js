@@ -45231,6 +45231,32 @@ api.submit_data_form = function({state, action}) {
   });
 };
 
+api.signup = function({state, action}) {
+  state = state.set('signup_status', 'sending');
+  state = state.setIn(['effects', shortid()], {
+    type: 'signup',
+    payload: action.payload
+  });
+  return state;
+};
+
+api.res_check_email_avail = function({state, action}) {
+  state = state.set('email_avail', action.payload);
+  return state;
+};
+
+api.check_email_avail = function({state, action}) {
+  state = state.setIn(['effects', shortid()], {
+    type: 'check_email_avail',
+    payload: action.payload
+  });
+  return state;
+};
+
+api.hash_location_change = function({state, action}) {
+  return state.set('hash_location', action.payload.location);
+};
+
 api['primus:data'] = function({state, action}) {
   var data, payload, store, type;
   ({data, store} = action.payload);
@@ -45266,7 +45292,7 @@ tami_index = function(state, action) {
   if (_.includes(keys_api, action.type)) {
     return api[action.type]({state, action});
   } else {
-    c('noop with ', action.type);
+    c('reducer noop with ', action.type);
     return state;
   }
 };
@@ -45291,10 +45317,14 @@ SUBMIT_DATA_JOB_STATUS = 'SUBMIT_DATA_JOB_STATUS';
 exports.default = {
   tami_index: {
     // jobs: Imm.Map({})
+    hash_location: 'ufo',
     SUBMIT_DATA_JOB_STATUS: PREPARE,
     effects: Imm.Map({
       [`${shortid()}`]: {
         type: 'init_primus'
+      },
+      [`${shortid()}`]: {
+        type: 'setup_listen_location'
       }
     })
   }
@@ -45350,6 +45380,21 @@ api.submit_data_form = function({effect, state, store}) {
   return primus.write({type, payload});
 };
 
+api.signup = function({effect, state, store}) {
+  // { type, payload } = effect
+  return primus.write({
+    type: 'signup',
+    payload: effect.payload
+  });
+};
+
+api.check_email_avail = function({effect, state, store}) {
+  return primus.write({
+    type: 'check_email_avail',
+    payload: effect.payload
+  });
+};
+
 api['primus_hotwire'] = function({effect, state}) {
   var payload, type;
   ({type, payload} = effect.payload);
@@ -45378,6 +45423,18 @@ api['init_primus'] = function({effect, store, state}) {
   }, 3000);
 };
 
+api.setup_listen_location = function({effect, state}) {
+  window.location.hash = 'ufo';
+  return window.addEventListener('hashchange', function() {
+    var location;
+    location = window.location.hash.replace(/^#\/?|\/$/g, '').split('/')[0];
+    return store.dispatch({
+      type: 'hash_location_change',
+      payload: {location}
+    });
+  }, false);
+};
+
 exports.default = api;
 
 
@@ -45385,7 +45442,7 @@ exports.default = api;
 /* 99 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var comp, dashboard, dashboard_001, home, map_dispatch_to_props, map_state_to_props, render;
+var comp, dashboard, dashboard_001, home, map_dispatch_to_props, map_state_to_props, render, ufo;
 
 home = rc(__webpack_require__(100).default);
 
@@ -45393,9 +45450,15 @@ dashboard = rc(__webpack_require__(101).default);
 
 dashboard_001 = rc(__webpack_require__(102).default);
 
+ufo = rc(__webpack_require__(104).default);
+
 render = function() {
-  // home()
-  return dashboard_001();
+  switch (this.props.hash_location) {
+    case 'ufo':
+      return ufo();
+    default:
+      return 'routing error';
+  }
 };
 
 comp = rr({
@@ -45403,7 +45466,7 @@ comp = rr({
 });
 
 map_state_to_props = function(state) {
-  return {};
+  return state.get('tami_index').toJS();
 };
 
 map_dispatch_to_props = function(dispatch) {
@@ -45794,6 +45857,160 @@ map_dispatch_to_props = function(dispatch) {
         type: 'submit_data_form',
         payload: {slot_name, owner_name, stuff}
       }, "submit_data_form");
+    }
+  };
+};
+
+exports.default = connect(map_state_to_props, map_dispatch_to_props)(comp);
+
+
+/***/ }),
+/* 104 */
+/***/ (function(module, exports) {
+
+var blueyGrey, comp, email_entry, map_dispatch_to_props, map_state_to_props, marine62, neonBlue, password_entry, render;
+
+neonBlue = 'rgb(0, 229, 255)';
+
+blueyGrey = 'rgb(155, 170, 183)';
+
+marine62 = 'rgb(6, 44, 75)';
+
+email_entry = function() {
+  return form({
+    onSubmit: (e) => {
+      e.preventDefault();
+      return this.setState({
+        phase: 'password_entry'
+      });
+    }
+  }, input({
+    style: {
+      backgroundColor: neonBlue,
+      height: .04 * wh,
+      fontSize: .024 * wh,
+      textAlign: 'center',
+      fontStyle: 'italic',
+      borderRadius: .008 * wh,
+      color: 'white'
+    },
+    type: 'email',
+    placeholder: 'EMAIL',
+    value: this.state.email,
+    onChange: (e) => {
+      var email_candide;
+      email_candide = e.currentTarget.value;
+      this.setState({
+        email: email_candide
+      });
+      return this.props.check_email_avail({email_candide});
+    }
+  }));
+};
+
+password_entry = function() {
+  return form({
+    style: {
+      display: 'flex',
+      flexDirection: 'column'
+    },
+    onSubmit: (e) => {
+      return e.preventDefault();
+    }
+  }, input({
+    style: {
+      backgroundColor: neonBlue,
+      height: .04 * wh,
+      fontSize: .024 * wh,
+      textAlign: 'center',
+      fontStyle: 'italic',
+      borderRadius: .008 * wh,
+      color: 'white'
+    },
+    value: this.state.password,
+    onChange: (e) => {
+      return this.setState({
+        password: e.currentTarget.value
+      });
+    },
+    type: 'password',
+    placeholder: 'PASSWORD'
+  }), input({
+    style: {
+      backgroundColor: neonBlue,
+      height: .04 * wh,
+      fontSize: .024 * wh,
+      textAlign: 'center',
+      fontStyle: 'italic',
+      borderRadius: .008 * wh,
+      color: 'white'
+    },
+    value: this.state.password_confirm,
+    onChange: (e) => {
+      return this.setState({
+        password_confirm: e.currentTarget.value
+      });
+    },
+    type: 'password',
+    placeholder: 'CONFIRM PASSWORD'
+  }));
+};
+
+render = function() {
+  return div({
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      // justifyContent: 'space-around'
+      alignItems: 'center',
+      backgroundColor: marine62,
+      height: wh
+    }
+  }, p({
+    style: {
+      fontSize: .012 * wh,
+      color: 'white'
+    }
+  }, 'TAMI-Index'), p({
+    style: {
+      fontSize: .019 * wh,
+      color: 'white',
+      fontStyle: 'italic'
+    }
+  }, 'SIGNUP'), (function() {
+    switch (this.state.phase) {
+      case 'email_entry':
+        return email_entry.bind(this)();
+      case 'password_entry':
+        return password_entry.bind(this)();
+    }
+  }).call(this));
+};
+
+// TODO : websocketts checks for email name availability
+comp = rr({
+  getInitialState: function() {
+    return {
+      phase: 'email_entry',
+      password: '',
+      password_confirm: '',
+      email: ''
+    };
+  },
+  render: render
+});
+
+map_state_to_props = function(state) {
+  return state.get('tami_index').toJS();
+};
+
+map_dispatch_to_props = function(dispatch) {
+  return {
+    check_email_avail: function({email_candide}) {
+      return dispatch({
+        type: 'check_email_avail',
+        payload: {email_candide}
+      });
     }
   };
 };
